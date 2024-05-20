@@ -1,5 +1,3 @@
-// Basic demo for accelerometer readings from Adafruit MPU6050
-
 #include <Adafruit_MPU6050.h>
 
 Adafruit_MPU6050 mpu;
@@ -7,7 +5,7 @@ Adafruit_MPU6050 mpu;
 void setup(void) {
   Serial.begin(115200);
   while (!Serial) {
-    delay(1000); // will pause Zero, Leonardo, etc until serial console opens
+    delay(1000); // will pause until serial console opens
   }
 
   Serial.println("Adafruit MPU6050 test!");
