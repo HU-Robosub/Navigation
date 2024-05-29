@@ -68,32 +68,34 @@ void Mpu6050::setupMPU6050() {
   }
 }
 
-void Mpu6050::printMPU6050Data() {
-  sensors_event_t a, g, temp;
+void Mpu6050::fetchSensorData() {
   mpu.getEvent(&a, &g, &temp);
+}
+
+void Mpu6050::printMPU6050Data() {
+  fetchSensorData();
 
   // Print accelerometer values
-  Serial.print("G Force X: ");
-  Serial.print(a.acceleration.x);
-  Serial.print(", Y: ");
-  Serial.print(a.acceleration.y);
-  Serial.print(", Z: ");
-  Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
+  Serial.printf("G Force X: %f, Y: %f, Z: %f m/s^2 \n", a.acceleration.x, a.acceleration.y, a.acceleration.z);
 
   // Print gyroscope values
-  Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
-  Serial.print(", Y: ");
-  Serial.print(g.gyro.y);
-  Serial.print(", Z: ");
-  Serial.print(g.gyro.z);
-  Serial.println(" rad/s");
+  Serial.printf("Rotation X: %f, Y: %f, Z: %f rad/s \n", g.gyro.x, g.gyro.y, g.gyro.z);
 
   // Print temperature
-  Serial.print("Temperature: ");
-  Serial.print(temp.temperature);
-  Serial.println(" degC");
+  Serial.printf("Temperature: %f degC \n\n", temp.temperature);
+}
 
-  Serial.println("");
+// Call fetchSensorData() before calling this function
+sensors_vec_t Mpu6050::getAccelerationData() {
+  return a.acceleration;
+}
+
+// Call fetchSensorData() before calling this function
+sensors_vec_t Mpu6050::getGyroData() {
+  return g.gyro;
+}
+
+// Call fetchSensorData() before calling this function
+float Mpu6050::getTempData() {
+  return temp.temperature;
 }
