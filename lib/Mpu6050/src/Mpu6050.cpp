@@ -6,7 +6,7 @@ bool Mpu6050::begin() {
   return mpu.begin();
 }
 
-void Mpu6050::setupMPU6050() {
+void Mpu6050::setupMpu6050() {
   mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
   Serial.print("Accelerometer range set to: ");
   switch (mpu.getAccelerometerRange()) {
@@ -72,7 +72,7 @@ void Mpu6050::fetchSensorData() {
   mpu.getEvent(&a, &g, &temp);
 }
 
-void Mpu6050::printMPU6050Data() {
+void Mpu6050::printMpu6050Data() {
   fetchSensorData();
 
   // Print accelerometer values
@@ -83,6 +83,12 @@ void Mpu6050::printMPU6050Data() {
 
   // Print temperature
   Serial.printf("Temperature: %f degC \n\n", temp.temperature);
+}
+
+// Call fetchSensorData() before calling this function
+sensors_event_t Mpu6050::getMpu6050Data()
+{
+  return a, g, temp;
 }
 
 // Call fetchSensorData() before calling this function

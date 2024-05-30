@@ -9,9 +9,10 @@ class Mpu6050 {
   public:
     Mpu6050();
     bool begin();
-    void setupMPU6050();
-    void printMPU6050Data();
+    void setupMpu6050();
+    void printMpu6050Data();
     void fetchSensorData();
+    sensors_event_t getMpu6050Data();
     sensors_vec_t getAccelerationData();
     sensors_vec_t getGyroData();
     float getTempData();
