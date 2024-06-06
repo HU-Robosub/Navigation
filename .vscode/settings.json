@@ -8,7 +8,8 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "cmath": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "mstd_iterator": "cpp"
     },
     "cmake.configureOnOpen": false
 }
