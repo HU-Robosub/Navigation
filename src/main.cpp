@@ -1,3 +1,4 @@
+#include <Common.h>
 #include <Adafruit_MPU6050.h>
 #include <LSM303.h>
 
@@ -12,8 +13,7 @@ MbedI2C Wire2(I2C_SDA1, I2C_SCL1);
 
 TwoWire *Wire_PTR = &Wire;
 
-float all_data[8];
-char buffer[4];
+float all_data[7];
 
 Adafruit_MPU6050 mpu;
 LSM303 compass;
@@ -24,7 +24,7 @@ void requestEventMaster() {
   Serial.println("Sending sensor data...");
   for (int i=0; i < 8; i++) {
     Wire2.write((byte*)&all_data[i], 4);
-    Serial.println(all_data[i]);
+    
   }
 }
 
@@ -82,6 +82,13 @@ void loop() {
   
   all_data[6]= temp.temperature;
   all_data[7]= compass.heading();
+  
+  // Print loop all data
+  for (int i=0; i < 7; i++) {
+    Serial.print(all_data[i]);
+    Serial.print(", ");
+    Serial.println();
+  }
 
   delay(500);
 }
