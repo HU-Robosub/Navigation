@@ -1,0 +1,137 @@
+#include "Common.h"
+#include "Mpu6050.h"
+#include <LSM303.h>
+
+#define SDA2 33
+#define SCL2 32
+#define SLAVE_ADDRESS 0x04 // TODO AUTOMATIC UPDATING
+
+Mpu6050 mpu;
+LSM303 compass;
+
+// for what data to send
+int reg = 1;
+
+// rolling buffers for all data
+float acc_arr[3];
+float gyro_arr[3];
+float temp;
+float comp;
+
+void receiveEventMaster(int numBytes) {
+  while (Wire1.available()) {
+    reg = Wire1.read();
+    //Serial.printf("reg is now: %d \n", reg);
+  }
+}
+
+void requestEventMaster() {
+  //Serial.println("Recieved a request!");
+  mpu.fetchSensorData();
+  
+  switch(reg)
+  {
+    // Accelerometer
+    case 0:
+    {
+      return;
+    }
+    case 1:
+    {
+      Wire1.write((byte *)&acc_arr, sizeof(acc_arr));
+      Serial.printf("Accelerometer: %f %f %f \n", acc_arr[0], acc_arr[1], acc_arr[2]);
+      break;
+    }
+    // Gyroscope
+    case 2:
+    {
+      Wire1.write((byte *)&gyro_arr, sizeof(gyro_arr));
+      Serial.printf("Gyroscope: %f %f %f \n", gyro_arr[0], gyro_arr[1], gyro_arr[2]);
+      break;
+    }
+    // Temperature
+    case 3:
+    {
+      Wire1.write((byte *)&temp, sizeof(temp));
+      Serial.printf("Temperature: %f \n", temp);
+      break;
+    }
+    // Compass heading
+    case 4:
+    {
+      Wire1.write((byte *)&comp, sizeof(comp));
+      Serial.printf("Compass: %f \n", comp);
+      break;
+    }
+    default:
+    {
+      Serial.println("Invalid register");
+      break;
+    }
+
+  }
+}
+
+void setup()
+{
+  Serial.begin(9600);
+  while(!Serial)
+  {
+    delay(1000); // Wait until serial console opens
+  }
+  // Setup busses
+  Wire.setPins(SDA, SCL);
+  Wire.begin();
+
+  Wire1.setPins(SDA2, SCL2);
+  Wire1.begin(SLAVE_ADDRESS);
+  Wire1.onReceive(receiveEventMaster);
+  Wire1.onRequest(requestEventMaster);
+
+  // Initialize MPU6050
+  if (!mpu.begin())
+  {
+    Serial.println("Failed to find MPU6050 chip");
+    while(1)
+    {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 found!");
+  
+  // Setup MPU6050
+  mpu.setupMpu6050();
+
+  // Setup LSM303
+  compass.init();
+  compass.enableDefault();
+
+  compass.m_min = (LSM303::vector<int16_t>){ -1212,   -265,   -863};
+  compass.m_max = (LSM303::vector<int16_t>){  -257,   +610,    -18};
+}
+
+void loop()
+{
+  // Print MPU6050 data
+  // mpu.printMpu6050Data();
+
+  // get new data
+  mpu.fetchSensorData();
+  sensors_vec_t accel_data = mpu.getAccelerationData();
+  sensors_vec_t gyro_data = mpu.getGyroData();
+  temp = mpu.getTempData();
+  compass.read();
+  comp = compass.heading();
+  
+  float new_acc[3] =  {accel_data.x, accel_data.y, accel_data.z};
+  for (int i = 0; i < 3; i++ )
+  {
+    acc_arr[i] = new_acc[i]; 
+  }
+
+  float new_gyro[3] = {gyro_data.roll, gyro_data.pitch, gyro_data.roll};
+  for (int i = 0; i < 3; i++)
+  {
+    gyro_arr[i] = new_gyro[i];
+  }
+}

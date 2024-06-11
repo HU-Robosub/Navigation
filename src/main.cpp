@@ -1,113 +1,94 @@
+#include <Common.h>
 #include <Adafruit_MPU6050.h>
+#include <LSM303.h>
+
+#define OWN_ADDRESS 0x06
+// GPIO pins of raspberry pico
+#define I2C_SDA0 4
+#define I2C_SCL0 5
+#define I2C_SDA1 18
+#define I2C_SCL1 19
+
+MbedI2C Wire2(I2C_SDA1, I2C_SCL1);
+
+TwoWire *Wire_PTR = &Wire;
+
+float all_data[7];
 
 Adafruit_MPU6050 mpu;
+LSM303 compass;
+
+void requestEventMaster() {  
+  // Send Sensor data
+  Serial.println("Recieved request for sensor data...");
+  Serial.println("Sending sensor data...");
+  for (int i=0; i < 8; i++) {
+    Wire2.write((byte*)&all_data[i], 4);
+    
+  }
+}
 
 void setup(void) {
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial) {
     delay(1000); // will pause until serial console opens
   }
+  // Setup busses
+  // initialize I2C bus for sensor bus
+  Wire.begin();  
+
+  // initialize I2C bus for master connection
+  Wire2.begin(OWN_ADDRESS);
+  Wire2.onRequest(requestEventMaster);
 
   Serial.println("Adafruit MPU6050 test!");
 
   // Try to initialize!
-  if (!mpu.begin()) {
+  while (!mpu.begin(MPU6050_I2CADDR_DEFAULT, Wire_PTR)) {
     Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
-    }
+    delay(100);
   }
+
   Serial.println("MPU6050 Found!");
 
-  mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
-  Serial.print("Accelerometer range set to: ");
-  switch (mpu.getAccelerometerRange()) {
-  case MPU6050_RANGE_2_G:
-    Serial.println("+-2G");
-    break;
-  case MPU6050_RANGE_4_G:
-    Serial.println("+-4G");
-    break;
-  case MPU6050_RANGE_8_G:
-    Serial.println("+-8G");
-    break;
-  case MPU6050_RANGE_16_G:
-    Serial.println("+-16G");
-    break;
-  }
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  Serial.print("Gyro range set to: ");
-  switch (mpu.getGyroRange()) {
-  case MPU6050_RANGE_250_DEG:
-    Serial.println("+- 250 deg/s");
-    break;
-  case MPU6050_RANGE_500_DEG:
-    Serial.println("+- 500 deg/s");
-    break;
-  case MPU6050_RANGE_1000_DEG:
-    Serial.println("+- 1000 deg/s");
-    break;
-  case MPU6050_RANGE_2000_DEG:
-    Serial.println("+- 2000 deg/s");
-    break;
-  }
-
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.print("Filter bandwidth set to: ");
-  switch (mpu.getFilterBandwidth()) {
-  case MPU6050_BAND_260_HZ:
-    Serial.println("260 Hz");
-    break;
-  case MPU6050_BAND_184_HZ:
-    Serial.println("184 Hz");
-    break;
-  case MPU6050_BAND_94_HZ:
-    Serial.println("94 Hz");
-    break;
-  case MPU6050_BAND_44_HZ:
-    Serial.println("44 Hz");
-    break;
-  case MPU6050_BAND_21_HZ:
-    Serial.println("21 Hz");
-    break;
-  case MPU6050_BAND_10_HZ:
-    Serial.println("10 Hz");
-    break;
-  case MPU6050_BAND_5_HZ:
-    Serial.println("5 Hz");
-    break;
-  }
+  mpu.setAccelerometerRange(MPU6050_RANGE_2_G); // Possible values 2, 4, 8, 16
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG); // Possible values 250, 500, 1000, 2000
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ); // Possible values 260, 184, 94, 44, 21, 10, 5
 
   Serial.println("");
   delay(100);
+
+  // Setup LSM303
+  compass.init();
+  compass.enableDefault();
+
+  compass.m_min = (LSM303::vector<int16_t>){ -1212,   -265,   -863};
+  compass.m_max = (LSM303::vector<int16_t>){  -257,   +610,    -18};
 }
 
 void loop() {
   /* Get new sensor events with the readings */
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
+  compass.read();
 
-  /* Print out the values */
-  Serial.print("Acceleration X: ");
-  Serial.print(a.acceleration.x);
-  Serial.print(", Y: ");
-  Serial.print(a.acceleration.y);
-  Serial.print(", Z: ");
-  Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
+  all_data[0]= a.acceleration.x;
+  all_data[1]= a.acceleration.y;
+  all_data[2]= a.acceleration.z;
+  
+  all_data[3]= g.gyro.x;
+  all_data[4]= g.gyro.y;
+  all_data[5]= g.gyro.z;
+  
+  all_data[6]= temp.temperature;
+  all_data[7]= compass.heading();
+  
+  // Print loop all data
+  for (int i=0; i < 7; i++) {
+    Serial.print(all_data[i]);
+    Serial.print(", ");
+    Serial.println();
+  }
 
-  Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
-  Serial.print(", Y: ");
-  Serial.print(g.gyro.y);
-  Serial.print(", Z: ");
-  Serial.print(g.gyro.z);
-  Serial.println(" rad/s");
-
-  Serial.print("Temperature: ");
-  Serial.print(temp.temperature);
-  Serial.println(" degC");
-
-  Serial.println("");
   delay(500);
 }
